@@ -28,3 +28,4 @@ build/
 .classpath
 .project
 /backend/.settings/
+/backend/.gradle/

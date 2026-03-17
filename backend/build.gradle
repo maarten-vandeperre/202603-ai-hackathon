@@ -16,6 +16,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-agroal'
     implementation 'io.quarkus:quarkus-smallrye-openapi'
     implementation 'io.quarkiverse.langchain4j:quarkus-langchain4j-ollama:1.7.4'
+    implementation 'io.quarkiverse.langchain4j:quarkus-langchain4j-openai:1.7.4'
     implementation 'dev.langchain4j:langchain4j-core:1.11.0'
 
     testImplementation 'io.quarkus:quarkus-junit5'

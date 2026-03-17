@@ -8,6 +8,17 @@ const PIPELINE_STAGES = [
   { id: 2, key: 'detect', label: 'Detect' },
   { id: 3, key: 'enrich', label: 'Enrich' },
   { id: 4, key: 'analyze', label: 'Analyze' },
+  { id: 5, key: 'score', label: 'Score' },
+  { id: 6, key: 'report', label: 'Report' },
+]
+
+const SCORE_BASKETS = [
+  { id: 'move', label: 'Ability to move', prefilledScore: 2, llmMotivation: 'Patient has knee injury; mobility limited per clinical notes. Suggested grade 2 (moderate limitation).' },
+  { id: 'eat', label: 'Ability to eat and/or prepare food', prefilledScore: 4, llmMotivation: 'No indication of impact on eating or food preparation in the document.' },
+  { id: 'clean-dress', label: 'Ability to clean/dress yourself', prefilledScore: 3, llmMotivation: 'Knee injury may affect bending and dressing; conservative grade 3.' },
+  { id: 'surveillance', label: 'Ability to live without surveillance (e.g., takes medicines properly)', prefilledScore: 4, llmMotivation: 'No evidence of need for supervision in the report.' },
+  { id: 'clean-house', label: 'Ability to clean the house', prefilledScore: 2, llmMotivation: 'Mobility and weight-bearing restrictions suggest difficulty with household tasks.' },
+  { id: 'socialize', label: 'Ability to socialize', prefilledScore: 3, llmMotivation: 'Driving restricted for 2 weeks; may limit social activities temporarily.' },
 ]
 
 const INITIAL_PATHOLOGIES = [
@@ -105,6 +116,10 @@ export default function MedicalAnalysisPage() {
   const [newDescriptionText, setNewDescriptionText] = useState('')
   const [enriching, setEnriching] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [scoreBaskets, setScoreBaskets] = useState(() =>
+    SCORE_BASKETS.map((b) => ({ ...b, score: b.prefilledScore, motivation: '' }))
+  )
+  const [contextPaneOpen, setContextPaneOpen] = useState(false)
 
   useEffect(() => {
     if (!loading) {
@@ -338,15 +353,38 @@ export default function MedicalAnalysisPage() {
     setExtraDescriptionStatus({})
     setEnrichSectionStatus({})
     setShowAddDescriptionForm(false)
+    setScoreBaskets(() => SCORE_BASKETS.map((b) => ({ ...b, score: b.prefilledScore, motivation: '' })))
+    setContextPaneOpen(false)
     setError(null)
   }, [])
+
+  const setBasketScore = useCallback((id, score) => {
+    setScoreBaskets((prev) => prev.map((b) => (b.id === id ? { ...b, score } : b)))
+  }, [])
+
+  const setBasketMotivation = useCallback((id, motivation) => {
+    setScoreBaskets((prev) => prev.map((b) => (b.id === id ? { ...b, motivation } : b)))
+  }, [])
+
+  const openContextPane = useCallback(() => setContextPaneOpen(true), [])
+  const closeContextPane = useCallback(() => setContextPaneOpen(false), [])
 
   const pipelineStatus = (stageId) => {
     if (stageId === 1) return loading ? 'processing' : parseResult ? 'done' : currentStep === 1 ? 'current' : 'idle'
     if (stageId === 2) return extracting ? 'processing' : currentStep > 2 ? 'done' : currentStep === 2 ? 'current' : 'idle'
     if (stageId === 3) return currentStep > 3 ? 'done' : currentStep === 3 ? 'current' : 'idle'
-    if (stageId === 4) return currentStep === 4 ? 'current' : 'idle'
+    if (stageId === 4) return currentStep > 4 ? 'done' : currentStep === 4 ? 'current' : 'idle'
+    if (stageId === 5) return currentStep > 5 ? 'done' : currentStep === 5 ? 'current' : 'idle'
+    if (stageId === 6) return currentStep === 6 ? 'current' : 'idle'
     return 'idle'
+  }
+
+  const scoreToBackground = (score) => {
+    if (score === 4) return 'var(--score-4)'
+    if (score === 3) return 'var(--score-3)'
+    if (score === 2) return 'var(--score-2)'
+    if (score === 1) return 'var(--score-1)'
+    return 'var(--score-0)'
   }
 
   return (
@@ -708,6 +746,9 @@ export default function MedicalAnalysisPage() {
                 </ul>
               </div>
               <div className="workflow__result-actions">
+                <button type="button" className="btn btn--primary" onClick={() => setCurrentStep(5)}>
+                  Go to Score
+                </button>
                 <button type="button" className="btn btn--secondary" onClick={() => setCurrentStep(3)}>
                   Back to findings
                 </button>
@@ -716,6 +757,156 @@ export default function MedicalAnalysisPage() {
                 </button>
               </div>
             </>
+          )}
+
+          {currentStep === 5 && (
+            <>
+              <div className="cliniq-content score-step__header">
+                <div className="score-step__title-row">
+                  <h2 className="cliniq-content__title">Score</h2>
+                  <button
+                    type="button"
+                    className="score-step__context-btn"
+                    onClick={openContextPane}
+                    title="View context (pathologies and descriptions)"
+                    aria-label="Open context pane"
+                  >
+                    <ContextIcon />
+                    <span>Context</span>
+                  </button>
+                </div>
+                <p className="cliniq-content__desc">Grade each basket from 0 to 4. If you change the prefilled score, add a motivation.</p>
+              </div>
+              <div className="score-baskets">
+                {scoreBaskets.map((basket) => {
+                  const changed = basket.score !== basket.prefilledScore
+                  const needsMotivation = changed && !basket.motivation.trim()
+                  return (
+                    <div
+                      key={basket.id}
+                      className="score-basket"
+                      style={{ ['--basket-bg']: scoreToBackground(basket.score) }}
+                    >
+                      <div className="score-basket__inner">
+                        <h3 className="score-basket__label">{basket.label}</h3>
+                        <div className="score-basket__grade">
+                          <span className="score-basket__grade-label">Grade</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={4}
+                            value={basket.score}
+                            onChange={(e) => setBasketScore(basket.id, Number(e.target.value))}
+                            className="score-basket__slider"
+                          />
+                          <span className="score-basket__grade-value">{basket.score}</span>
+                        </div>
+                        {changed && (
+                          <label className="score-basket__motivation-wrap">
+                            <span className="score-basket__motivation-label">Motivation for change {needsMotivation && '(required)'}</span>
+                            <textarea
+                              className="score-basket__motivation"
+                              value={basket.motivation}
+                              onChange={(e) => setBasketMotivation(basket.id, e.target.value)}
+                              placeholder="Explain why you changed the score..."
+                              rows={2}
+                            />
+                          </label>
+                        )}
+                        <p className="score-basket__llm">{basket.llmMotivation}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="workflow__result-actions">
+                <button type="button" className="btn btn--primary" onClick={() => setCurrentStep(6)}>
+                  View report
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={() => setCurrentStep(4)}>
+                  Back to Enrich
+                </button>
+              </div>
+            </>
+          )}
+
+          {currentStep === 6 && (
+            <div className="cliniq-content report-step">
+              <h2 className="cliniq-results-header__title">Report</h2>
+              <p className="cliniq-results-header__sub">Summary of the analysis. Original document attached.</p>
+              <div className="report-summary">
+                <section className="report-section">
+                  <h3 className="report-section__title">Document</h3>
+                  <p className="report-section__text">{extractionResult?.filename || file?.name || '—'}</p>
+                </section>
+                <section className="report-section">
+                  <h3 className="report-section__title">Pathologies</h3>
+                  <ul className="report-list">
+                    {pathologies.map((p) => (
+                      <li key={p.id}>
+                        <strong>{p.name}</strong>
+                        <span className="report-list__status">{pathologyStatus[p.id] === 'accepted' ? 'Accepted' : pathologyStatus[p.id] === 'declined' ? 'Declined' : '—'}</span>
+                        <p className="report-list__desc">{p.description}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="report-section">
+                  <h3 className="report-section__title">Enrichment</h3>
+                  <p className="report-section__text">Sections and extra descriptions from the document.</p>
+                  <ul className="report-list">
+                    {ENRICH_SECTIONS.map((s) => (
+                      <li key={s.id}><strong>{s.title}</strong> — {s.text}</li>
+                    ))}
+                    {extraDescriptions.map((d) => (
+                      <li key={d.id}>{d.text}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="report-section">
+                  <h3 className="report-section__title">Scores</h3>
+                  <ul className="report-list report-list--scores">
+                    {scoreBaskets.map((b) => {
+                      const reason = b.motivation?.trim() ? b.motivation : b.llmMotivation
+                      return (
+                        <li key={b.id}>
+                          <span>{b.label}</span>
+                          <span className="report-list__grade">Grade: {b.score}</span>
+                          {reason && <span className="report-list__motivation">— {reason}</span>}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+                <section className="report-section">
+                  <h3 className="report-section__title">Attachment</h3>
+                  <div className="report-attachment">
+                    <p className="report-section__text">Original document: {extractionResult?.filename || file?.name || '—'}</p>
+                    <button
+                      type="button"
+                      className="report-attachment__view-btn"
+                      onClick={() => openDocumentView('results')}
+                      title="View original document"
+                      aria-label="View original document"
+                    >
+                      <DocumentIcon />
+                      <span>View document</span>
+                    </button>
+                  </div>
+                </section>
+              </div>
+              <div className="report-actions">
+                <button type="button" className="btn btn--primary" onClick={() => {}}>
+                  Download as PDF
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={() => {}}>
+                  Mail
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={() => setCurrentStep(5)}>
+                  Back to Score
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
@@ -889,7 +1080,59 @@ export default function MedicalAnalysisPage() {
           </aside>
         </div>
       )}
+
+      {contextPaneOpen && (
+        <div className="side-view-overlay" onClick={closeContextPane} aria-hidden="false">
+          <aside
+            className="side-view side-view--context"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="context-pane-title"
+            aria-modal="true"
+          >
+            <div className="side-view__header">
+              <h2 id="context-pane-title" className="side-view__title">Context for grading</h2>
+              <button type="button" className="side-view__close" onClick={closeContextPane} aria-label="Close">×</button>
+            </div>
+            <div className="side-view__content context-pane__content">
+              <h3 className="context-pane__section-title">Pathologies</h3>
+              <ul className="context-pane__list">
+                {pathologies.map((p) => (
+                  <li key={p.id} className="context-pane__item">
+                    <strong>{p.name}</strong>
+                    <p className="context-pane__desc">{p.description}</p>
+                  </li>
+                ))}
+              </ul>
+              <h3 className="context-pane__section-title">Descriptions (from previous steps)</h3>
+              <ul className="context-pane__list">
+                {ENRICH_SECTIONS.map((s) => (
+                  <li key={s.id} className="context-pane__item">
+                    <strong>{s.title}</strong>
+                    <p className="context-pane__desc">{s.text}</p>
+                  </li>
+                ))}
+                {extraDescriptions.map((d) => (
+                  <li key={d.id} className="context-pane__item">
+                    <p className="context-pane__desc">{d.text}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
+  )
+}
+
+function ContextIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
   )
 }
 

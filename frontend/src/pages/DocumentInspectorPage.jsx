@@ -50,12 +50,16 @@ export default function DocumentInspectorPage() {
     setRagAnswer(null)
     setRagFullPrompt(null)
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 90000)
       const res = await fetch(`${API_BASE}/api/rag/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q })
+        body: JSON.stringify({ query: q }),
+        signal: controller.signal
       })
-      const data = await res.json()
+      clearTimeout(timeoutId)
+      const data = await res.json().catch(() => ({ error: res.statusText }))
       if (!res.ok) {
         setRagError(data.error || res.statusText)
         return
@@ -64,7 +68,13 @@ export default function DocumentInspectorPage() {
       setRagFullPrompt(data.fullPrompt ?? null)
       setRagTab('answer')
     } catch (e) {
-      setRagError(e.message)
+      if (e.name === 'AbortError') {
+        setRagError('Request timed out. The model may be slow; try again or shorten your question.')
+      } else if (e.message === 'Failed to fetch') {
+        setRagError(`Could not reach the backend at ${API_BASE}. Check that it is running and CORS allows this origin (e.g. http://localhost:5173 or http://127.0.0.1:5173).`)
+      } else {
+        setRagError(e.message)
+      }
     } finally {
       setRagLoading(false)
     }

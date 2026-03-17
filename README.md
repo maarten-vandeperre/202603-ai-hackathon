@@ -71,6 +71,7 @@ Frontend: http://localhost:5173
 
 1. **Docling**: Upload a file; Docling parses it. In **Document Inspector**, click **“Store in vector database”** after parsing to index it.
 2. **Document Inspector**: Run **similarity search** to see top 5 matching chunks, or use **Ask (RAG)** to get an answer from the Ollama model (tinyllama by default) using retrieved context.
+3. **Artist Data** (`/artist-data`): Upload a PDF (or paste text), run **Extract** to get artist names and prices (with unit, e.g. per hour / flat). Edit the table, then **Persist** to save to the DB. Use the **Artist–price table** tab to view or **Clear** stored rows. Full docs: [docs/ARTIST_DATA_PIPELINE.md](docs/ARTIST_DATA_PIPELINE.md).
 
 ### 5. Test vector storage with sample PDF
 
@@ -109,12 +110,13 @@ The test uploads `artist_profile_rag_test.pdf`, stores it in the vector DB, runs
 - `POST /api/vectorize` – JSON `{ documentName, uploadTime?, text }`; stores chunks and embeddings.
 - `GET /api/similarity?q=...` – returns top 5 chunks (documentName, uploadTime, chunkText, distance).
 - `POST /api/rag/ask` – JSON `{ "query": "..." }`; returns `{ "answer": "..." }` (RAG over stored chunks, LLM via Ollama).
+- **Artist Data**: `POST /api/artist-data/extract` (JSON `{ rawText }`), `GET /api/artist-data/artists`, `POST /api/artist-data/artists` (replace stored rows), `DELETE /api/artist-data/artists` (clear). See [docs/ARTIST_DATA_PIPELINE.md](docs/ARTIST_DATA_PIPELINE.md).
 - `GET /api/health` – health check
 
 ## Compose
 
 - **docling**: document parsing (CPU image by default).
-- **postgres**: pgvector image; init script creates `document_chunks` table (document_name, upload_time, chunk_text, embedding vector(768)).
+- **postgres**: pgvector image; init script creates `document_chunks` and `artist_prices` tables. The backend also runs `CREATE TABLE IF NOT EXISTS artist_prices` on startup so the table exists even if the DB was created before the artist-data feature.
 - **ollama**: embedding model; use `nomic-embed-text` (768 dimensions) for compatibility with the init schema.
 
 ### Clear the vector database

@@ -32,6 +32,14 @@ export default function Layout() {
               Document Inspector
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/artist-data"
+              className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`}
+            >
+              Artist Data
+            </NavLink>
+          </li>
         </ul>
       </nav>
       <main className="layout__main">

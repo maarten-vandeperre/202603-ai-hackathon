@@ -1,7 +1,9 @@
-# Podman Compose (or Docker Compose) - Docling document parsing service
-# Run: podman-compose up -d   (or: docker compose up -d)
-# Docling API: http://localhost:5001/v1
-# API docs:    http://localhost:5001/docs
+# Podman Compose (or Docker Compose)
+# Run: podman-compose up -d
+#
+# Docling API:    http://localhost:5001/v1
+# Ollama API:     http://localhost:11434 (pull embedding model: ollama pull nomic-embed-text)
+# PostgreSQL:     localhost:5432 (user: app, password: app, db: vectordb)
 
 services:
   docling:
@@ -11,6 +13,29 @@ services:
       - "5001:5001"
     environment:
       DOCLING_SERVE_ENABLE_UI: "1"
-    # CPU-only image is smaller; use docling-serve for default, or docling-serve-cu128 for GPU
-    # image: ghcr.io/docling-project/docling-serve-cpu:latest
     restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: vectordb
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: vectordb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data: {}

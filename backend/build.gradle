@@ -12,10 +12,18 @@ dependencies {
     implementation enforcedPlatform('io.quarkus.platform:quarkus-bom:3.25.4')
     implementation 'io.quarkus:quarkus-rest-jackson'
     implementation 'io.quarkus:quarkus-rest-client-jackson'
+    implementation 'io.quarkus:quarkus-jdbc-postgresql'
+    implementation 'io.quarkus:quarkus-agroal'
     implementation 'io.quarkus:quarkus-smallrye-openapi'
+    implementation 'io.quarkiverse.langchain4j:quarkus-langchain4j-ollama:1.7.4'
+    implementation 'dev.langchain4j:langchain4j-core:1.11.0'
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'io.rest-assured:json-path'
+    testImplementation 'org.testcontainers:testcontainers:1.19.8'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.8'
+    testImplementation 'com.github.tomakehurst:wiremock-jre8:2.35.0'
 }
 
 group = 'com.example'
@@ -28,6 +36,13 @@ java {
 
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+
+// Required for Java 24+ (JBoss Threads reflective access)
+tasks.configureEach { task ->
+    if (task.name == 'quarkusDev' && task.hasProperty('jvmArgs')) {
+        task.jvmArgs = ["--add-opens=java.base/java.lang=ALL-UNNAMED"]
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

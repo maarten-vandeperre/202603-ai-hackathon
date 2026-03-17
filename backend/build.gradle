@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'io.quarkus' version "${quarkusPluginVersion}"
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation enforcedPlatform('io.quarkus.platform:quarkus-bom:3.25.4')
+    implementation 'io.quarkus:quarkus-rest-jackson'
+    implementation 'io.quarkus:quarkus-rest-client-jackson'
+    implementation 'io.quarkus:quarkus-smallrye-openapi'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+group = 'com.example'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+// Quarkus plugin creates configurations (e.g. quarkusProdBaseRuntimeClasspathConfigurationCopy1) that don't inherit the BOM.
+// Add BOM only to configs that allow it; skip read-only ones (e.g. quarkusGeneratedSourcesCompileClasspath).
+afterEvaluate {
+    def quarkusBom = project.dependencies.enforcedPlatform('io.quarkus.platform:quarkus-bom:3.25.4')
+    configurations.matching { conf ->
+        conf.name.contains('quarkus') && conf.canBeResolved && !conf.name.contains('GeneratedSources')
+    }.configureEach { conf ->
+        try {
+            conf.dependencies.add(quarkusBom)
+        } catch (Exception ignored) {
+            // Configuration does not allow declaring dependencies
+        }
+    }
+}

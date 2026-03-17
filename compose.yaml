@@ -1,0 +1,16 @@
+# Podman Compose (or Docker Compose) - Docling document parsing service
+# Run: podman-compose up -d   (or: docker compose up -d)
+# Docling API: http://localhost:5001/v1
+# API docs:    http://localhost:5001/docs
+
+services:
+  docling:
+    image: ghcr.io/docling-project/docling-serve:latest
+    container_name: docling-serve
+    ports:
+      - "5001:5001"
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "1"
+    # CPU-only image is smaller; use docling-serve for default, or docling-serve-cu128 for GPU
+    # image: ghcr.io/docling-project/docling-serve-cpu:latest
+    restart: unless-stopped

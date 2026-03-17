@@ -667,6 +667,205 @@ body {
   margin-top: 0.5rem;
 }
 
+/* Enrich step: sections from document (paragraphs linked to inability) */
+.enrich-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.enrich-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.enrich-section__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.enrich-section__actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.enrich-section--handwritten {
+  border-color: #3d3a35;
+}
+
+.enrich-section--accepted {
+  border-color: var(--accent);
+  background: rgba(4, 122, 139, 0.08);
+}
+
+.enrich-section--declined {
+  opacity: 0.65;
+}
+
+.enrich-section__title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: var(--text);
+}
+
+.enrich-section__source {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.enrich-section__text {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0 0 0.75rem;
+}
+
+.enrich-section__handwritten {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.enrich-section__image-caption {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.enrich-section__image-placeholder {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  min-height: 80px;
+}
+
+.handwritten-placeholder {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 80px;
+}
+
+.handwritten-placeholder__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.handwritten-placeholder__text {
+  position: relative;
+  display: block;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #5c574d;
+  line-height: 1.5;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+/* Extra descriptions (Enrich step) */
+.extra-descriptions {
+  margin-top: 1rem;
+}
+
+.extra-descriptions__title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: var(--text);
+}
+
+.extra-descriptions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.extra-description-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.extra-description-item--accepted {
+  border-color: var(--accent);
+  background: rgba(4, 122, 139, 0.08);
+}
+
+.extra-description-item--declined {
+  opacity: 0.65;
+}
+
+.extra-description-item__text {
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 0;
+  min-width: 0;
+}
+
+.extra-description-item__actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.add-description-form {
+  padding: 1rem;
+  margin: 0.5rem 0 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.add-description-form__label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.add-description-form__textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 3rem;
+}
+
+.add-description-form__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* Pathology list (Medical Analysis step 3) */
 .pathology-list {
   list-style: none;

@@ -7,6 +7,7 @@ const STEPS = [
   { id: 1, label: 'Upload document' },
   { id: 2, label: 'Extract pathologies' },
   { id: 3, label: 'Results' },
+  { id: 4, label: 'Enrich' },
 ]
 
 const INITIAL_PATHOLOGIES = [
@@ -43,9 +44,39 @@ Clinical examination showed marked tenderness along the medial joint line and th
 Additional notes: Patient advised to avoid weight-bearing sports for 6 weeks. Follow-up in 4 weeks.`
 
 let nextPathologyId = 100
+let nextDescriptionId = 200
 function generatePathologyId() {
   return `path-${nextPathologyId++}`
 }
+function generateDescriptionId() {
+  return `desc-${nextDescriptionId++}`
+}
+
+/** Paragraphs from the original document linked to the inability, as written by the physician (hard-coded). One section is partly handwritten (image). */
+const ENRICH_SECTIONS = [
+  {
+    id: 'enrich-1',
+    title: 'Clinical assessment',
+    source: 'Radiology report, p. 2',
+    text: 'MRI of the knee revealed a complete rupture of the anterior cruciate ligament with significant bone bruising and joint effusion. The patient reported a sudden twisting injury while skiing when the binding did not release. Lachman and pivot-shift tests were positive. Surgical reconstruction was recommended.',
+    handwritten: false,
+  },
+  {
+    id: 'enrich-2',
+    title: 'Examination findings',
+    source: 'Clinical notes, p. 3',
+    text: 'Clinical examination showed marked tenderness along the medial joint line and the course of the medial collateral ligament. Valgus stress test was positive. The patient described a fall while skiing with the knee forced inward. Ultrasound confirmed a grade II MCL sprain with partial fibre disruption.',
+    handwritten: false,
+  },
+  {
+    id: 'enrich-3',
+    title: 'Physician notes (partly handwritten)',
+    source: 'Handwritten addendum, p. 4',
+    text: 'No driving for 2 weeks. Consider physiotherapy from week 3.',
+    handwritten: true,
+    handwrittenNote: 'No driving for 2 weeks. Consider physiotherapy from week 3.',
+  },
+]
 
 export default function MedicalAnalysisPage() {
   const inputId = useId()
@@ -61,11 +92,18 @@ export default function MedicalAnalysisPage() {
   const [pathologyStatus, setPathologyStatus] = useState({})
   const [sideViewMode, setSideViewMode] = useState(null)
   const [sideViewPathology, setSideViewPathology] = useState(null)
+  const [sideViewDescription, setSideViewDescription] = useState(null)
   const [showAddPathologyForm, setShowAddPathologyForm] = useState(false)
   const [newPathologyName, setNewPathologyName] = useState('')
   const [newPathologyDesc, setNewPathologyDesc] = useState('')
   const [addFromSelection, setAddFromSelection] = useState(null)
-  const [analyzing, setAnalyzing] = useState(false)
+  const [documentViewContext, setDocumentViewContext] = useState('results')
+  const [extraDescriptions, setExtraDescriptions] = useState([])
+  const [extraDescriptionStatus, setExtraDescriptionStatus] = useState({})
+  const [enrichSectionStatus, setEnrichSectionStatus] = useState({})
+  const [showAddDescriptionForm, setShowAddDescriptionForm] = useState(false)
+  const [newDescriptionText, setNewDescriptionText] = useState('')
+  const [enriching, setEnriching] = useState(false)
 
   const upload = useCallback(async (fileToUpload) => {
     if (!fileToUpload) return
@@ -154,7 +192,8 @@ export default function MedicalAnalysisPage() {
     setAddFromSelection(null)
   }, [])
 
-  const openDocumentView = useCallback(() => {
+  const openDocumentView = useCallback((context = 'results') => {
+    setDocumentViewContext(context)
     setSideViewMode('document')
     setSideViewPathology(null)
     setAddFromSelection(null)
@@ -163,6 +202,14 @@ export default function MedicalAnalysisPage() {
   const closeSideView = useCallback(() => {
     setSideViewMode(null)
     setSideViewPathology(null)
+    setSideViewDescription(null)
+    setAddFromSelection(null)
+  }, [])
+
+  const openDescriptionExcerpt = useCallback((payload) => {
+    setSideViewMode('description')
+    setSideViewPathology(null)
+    setSideViewDescription(payload)
     setAddFromSelection(null)
   }, [])
 
@@ -205,20 +252,58 @@ export default function MedicalAnalysisPage() {
     window.getSelection()?.removeAllRanges()
   }, [])
 
-  const analyze = useCallback(async () => {
+  const enrich = useCallback(async () => {
     if (!extractionResult) return
-    setAnalyzing(true)
+    setEnriching(true)
     setError(null)
     try {
-      // Placeholder: can call a backend analysis endpoint later
-      await new Promise((r) => setTimeout(r, 800))
-      setError(null)
+      await new Promise((r) => setTimeout(r, 400))
+      setCurrentStep(4)
     } catch (e) {
       setError(e.message)
     } finally {
-      setAnalyzing(false)
+      setEnriching(false)
     }
   }, [extractionResult])
+
+  const acceptExtraDescription = useCallback((id) => {
+    setExtraDescriptionStatus((s) => ({ ...s, [id]: 'accepted' }))
+  }, [])
+
+  const declineExtraDescription = useCallback((id) => {
+    setExtraDescriptionStatus((s) => ({ ...s, [id]: 'declined' }))
+  }, [])
+
+  const acceptEnrichSection = useCallback((id) => {
+    setEnrichSectionStatus((s) => ({ ...s, [id]: 'accepted' }))
+  }, [])
+
+  const declineEnrichSection = useCallback((id) => {
+    setEnrichSectionStatus((s) => ({ ...s, [id]: 'declined' }))
+  }, [])
+
+  const addExtraDescriptionManual = useCallback(() => {
+    const text = newDescriptionText.trim()
+    if (!text) return
+    const id = generateDescriptionId()
+    setExtraDescriptions((prev) => [...prev, { id, text }])
+    setNewDescriptionText('')
+    setShowAddDescriptionForm(false)
+  }, [newDescriptionText])
+
+  const addExtraDescriptionFromSelection = useCallback(() => {
+    if (!addFromSelection?.selectedText) return
+    const id = generateDescriptionId()
+    setExtraDescriptions((prev) => [...prev, { id, text: addFromSelection.selectedText, sourceExcerpt: addFromSelection.selectedText }])
+    setAddFromSelection(null)
+    window.getSelection()?.removeAllRanges()
+  }, [addFromSelection])
+
+  const handleDocumentSelectionEnrich = useCallback(() => {
+    const sel = window.getSelection()
+    const text = sel?.toString()?.trim()
+    if (text) setAddFromSelection({ selectedText: text, selectionAs: 'description', otherValue: '' })
+  }, [])
 
   const reset = useCallback(() => {
     setCurrentStep(1)
@@ -229,8 +314,14 @@ export default function MedicalAnalysisPage() {
     setPathologyStatus({})
     setSideViewMode(null)
     setSideViewPathology(null)
+    setSideViewDescription(null)
+    setDocumentViewContext('results')
     setShowAddPathologyForm(false)
     setAddFromSelection(null)
+    setExtraDescriptions([])
+    setExtraDescriptionStatus({})
+    setEnrichSectionStatus({})
+    setShowAddDescriptionForm(false)
     setError(null)
   }, [])
 
@@ -422,10 +513,134 @@ export default function MedicalAnalysisPage() {
                 <button
                   type="button"
                   className="btn btn--primary"
-                  onClick={analyze}
-                  disabled={analyzing || !extractionResult}
+                  onClick={enrich}
+                  disabled={enriching || !extractionResult}
                 >
-                  {analyzing ? 'Analyzing…' : 'Analyze'}
+                  {enriching ? 'Enriching…' : 'Enrich'}
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={reset}>
+                  Analyse another document
+                </button>
+              </div>
+            </>
+          )}
+
+          {currentStep === 4 && (
+            <>
+              <h2 className="workflow__title">Step 4: Enrich</h2>
+              <p className="workflow__desc">Paragraphs from the original document linked to the inability, as written by the physician. Some content may be handwritten.</p>
+              <div className="workflow__result-toolbar">
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => openDocumentView('enrich')}
+                  title="View source document"
+                  aria-label="View source document"
+                >
+                  <DocumentIcon />
+                  <span>View document</span>
+                </button>
+              </div>
+              <div className="enrich-sections">
+                {ENRICH_SECTIONS.map((section) => {
+                  const sectionStatus = enrichSectionStatus[section.id]
+                  return (
+                    <div key={section.id} className={`enrich-section ${section.handwritten ? 'enrich-section--handwritten' : ''} ${sectionStatus ? `enrich-section--${sectionStatus}` : ''}`}>
+                      <div className="enrich-section__content">
+                        <h3 className="enrich-section__title">{section.title}</h3>
+                        <span className="enrich-section__source">{section.source}</span>
+                        <p className="enrich-section__text">{section.text}</p>
+                        {section.handwritten && (
+                      <div className="enrich-section__handwritten">
+                        <span className="enrich-section__image-caption">Handwritten note (image)</span>
+                        <div className="enrich-section__image-placeholder" aria-hidden="true">
+                          <HandwrittenImagePlaceholder text={section.handwrittenNote} />
+                        </div>
+                      </div>
+                    )}
+                      </div>
+                      <div className="enrich-section__actions">
+                        <button type="button" className="pathology-item__btn pathology-item__btn--accept" onClick={() => acceptEnrichSection(section.id)} title="Approve">Approve</button>
+                        <button type="button" className="pathology-item__btn pathology-item__btn--decline" onClick={() => declineEnrichSection(section.id)} title="Decline">Decline</button>
+                        <button
+                          type="button"
+                          className="pathology-item__eye"
+                          onClick={() => openDescriptionExcerpt({
+                            title: section.title,
+                            excerpt: section.text + (section.handwritten ? `\n\n[Handwritten note]\n${section.handwrittenNote}` : ''),
+                            sourceLabel: section.source,
+                          })}
+                          title="View source chunk"
+                          aria-label={`View source chunk for ${section.title}`}
+                        >
+                          <EyeIcon />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="extra-descriptions">
+                <h3 className="extra-descriptions__title">Extra descriptions</h3>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => setShowAddDescriptionForm(true)}
+                  aria-label="Add description"
+                >
+                  + Add description
+                </button>
+                {showAddDescriptionForm && (
+                  <div className="add-description-form">
+                    <label className="add-description-form__label">
+                      Description
+                      <textarea
+                        className="add-description-form__textarea"
+                        value={newDescriptionText}
+                        onChange={(e) => setNewDescriptionText(e.target.value)}
+                        placeholder="Enter description text"
+                        rows={2}
+                      />
+                    </label>
+                    <div className="add-description-form__actions">
+                      <button type="button" className="btn btn--primary" onClick={addExtraDescriptionManual} disabled={!newDescriptionText.trim()}>
+                        Add
+                      </button>
+                      <button type="button" className="btn btn--secondary" onClick={() => { setShowAddDescriptionForm(false); setNewDescriptionText(''); }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <ul className="extra-descriptions-list">
+                  {extraDescriptions.map((d) => {
+                    const status = extraDescriptionStatus[d.id]
+                    const excerpt = d.sourceExcerpt ?? d.text
+                    const sourceLabel = d.sourceExcerpt ? 'From document selection' : 'Entered manually'
+                    return (
+                      <li key={d.id} className={`extra-description-item ${status ? `extra-description-item--${status}` : ''}`}>
+                        <p className="extra-description-item__text">{d.text}</p>
+                        <div className="extra-description-item__actions">
+                          <button type="button" className="pathology-item__btn pathology-item__btn--accept" onClick={() => acceptExtraDescription(d.id)} title="Accept">Accept</button>
+                          <button type="button" className="pathology-item__btn pathology-item__btn--decline" onClick={() => declineExtraDescription(d.id)} title="Decline">Decline</button>
+                          <button
+                            type="button"
+                            className="pathology-item__eye"
+                            onClick={() => openDescriptionExcerpt({ title: 'Extra description', excerpt, sourceLabel })}
+                            title="View source chunk"
+                            aria-label="View source chunk"
+                          >
+                            <EyeIcon />
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+              <div className="workflow__result-actions">
+                <button type="button" className="btn btn--secondary" onClick={() => setCurrentStep(3)}>
+                  Back to results
                 </button>
                 <button type="button" className="btn btn--secondary" onClick={reset}>
                   Analyse another document
@@ -482,6 +697,40 @@ export default function MedicalAnalysisPage() {
         </div>
       )}
 
+      {(sideViewMode === 'description' && sideViewDescription) && (
+        <div className="side-view-overlay" onClick={closeSideView} aria-hidden="false">
+          <aside
+            className="side-view"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="side-view-desc-title"
+            aria-modal="true"
+          >
+            <div className="side-view__header">
+              <h2 id="side-view-desc-title" className="side-view__title">{sideViewDescription.title}</h2>
+              <button type="button" className="side-view__close" onClick={closeSideView} aria-label="Close">×</button>
+            </div>
+            <div className="side-view__meta">
+              {extractionResult?.filename && (
+                <span className="side-view__meta-item">
+                  <span className="side-view__meta-label">Document</span>
+                  <span className="side-view__meta-value">{extractionResult.filename}</span>
+                </span>
+              )}
+              {sideViewDescription.sourceLabel && (
+                <span className="side-view__meta-item">
+                  <span className="side-view__meta-label">Source</span>
+                  <span className="side-view__meta-value">{sideViewDescription.sourceLabel}</span>
+                </span>
+              )}
+            </div>
+            <div className="side-view__content">
+              <pre className="side-view__excerpt">{sideViewDescription.excerpt}</pre>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {sideViewMode === 'document' && (
         <div className="side-view-overlay" onClick={closeSideView} aria-hidden="false">
           <aside
@@ -503,15 +752,31 @@ export default function MedicalAnalysisPage() {
                 </span>
               )}
             </div>
-            <p className="side-view__hint">Select text in the document below, then choose whether it is the name or description of a pathology and fill in the other field to add it.</p>
+            <p className="side-view__hint">
+              {documentViewContext === 'enrich'
+                ? 'Select text in the document below to add it as an extra description.'
+                : 'Select text in the document below, then choose whether it is the name or description of a pathology and fill in the other field to add it.'}
+            </p>
             <div
               className="side-view__document-content"
-              onMouseUp={handleDocumentSelection}
-              onTouchEnd={handleDocumentSelection}
+              onMouseUp={documentViewContext === 'enrich' ? handleDocumentSelectionEnrich : handleDocumentSelection}
+              onTouchEnd={documentViewContext === 'enrich' ? handleDocumentSelectionEnrich : handleDocumentSelection}
             >
               {MOCK_SOURCE_DOCUMENT}
             </div>
-            {addFromSelection && (
+            {addFromSelection && documentViewContext === 'enrich' && (
+              <div className="add-from-selection">
+                <h3 className="add-from-selection__title">Add as extra description</h3>
+                <p className="add-from-selection__preview">Selected: "{addFromSelection.selectedText.slice(0, 80)}{addFromSelection.selectedText.length > 80 ? '…' : ''}"</p>
+                <div className="add-from-selection__actions">
+                  <button type="button" className="btn btn--primary" onClick={addExtraDescriptionFromSelection}>
+                    Add as description
+                  </button>
+                  <button type="button" className="btn btn--secondary" onClick={cancelAddFromSelection}>Cancel</button>
+                </div>
+              </div>
+            )}
+            {addFromSelection && documentViewContext === 'results' && (
               <div className="add-from-selection">
                 <h3 className="add-from-selection__title">Add pathology from selection</h3>
                 <p className="add-from-selection__preview">Selected: "{addFromSelection.selectedText.slice(0, 60)}{addFromSelection.selectedText.length > 60 ? '…' : ''}"</p>
@@ -556,6 +821,20 @@ export default function MedicalAnalysisPage() {
           </aside>
         </div>
       )}
+    </div>
+  )
+}
+
+function HandwrittenImagePlaceholder({ text }) {
+  return (
+    <div className="handwritten-placeholder">
+      <svg className="handwritten-placeholder__bg" viewBox="0 0 280 80" preserveAspectRatio="none" aria-hidden="true">
+        <rect width="100%" height="100%" fill="#f5f0e6" stroke="#c4b8a8" strokeWidth="1" rx="2" />
+        <line x1="12" y1="24" x2="268" y2="24" stroke="#d4c8b8" strokeWidth="0.5" strokeDasharray="2 2" />
+        <line x1="12" y1="40" x2="268" y2="40" stroke="#d4c8b8" strokeWidth="0.5" strokeDasharray="2 2" />
+        <line x1="12" y1="56" x2="200" y2="56" stroke="#d4c8b8" strokeWidth="0.5" strokeDasharray="2 2" />
+      </svg>
+      <span className="handwritten-placeholder__text">{text}</span>
     </div>
   )
 }

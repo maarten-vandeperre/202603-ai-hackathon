@@ -27,11 +27,28 @@ body {
 .app {
   max-width: 720px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.app--page {
+  width: 100%;
+}
+
+.page-placeholder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.page-placeholder__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
 }
 
 .header {

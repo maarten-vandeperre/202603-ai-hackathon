@@ -54,3 +54,30 @@
   flex: 1;
   padding: 2rem 1.5rem;
 }
+
+/* Full light theme when ClinIQ (medical analysis) is shown */
+.layout:has(.cliniq) .nav {
+  background: #f9fafb;
+  border-bottom-color: #e5e7eb;
+}
+
+.layout:has(.cliniq) .nav__brand {
+  color: #0d9488;
+}
+
+.layout:has(.cliniq) .nav__link {
+  color: #6b7280;
+}
+
+.layout:has(.cliniq) .nav__link:hover {
+  color: #111827;
+}
+
+.layout:has(.cliniq) .nav__link--active {
+  color: #0d9488;
+  border-bottom-color: #0d9488;
+}
+
+.layout__main:has(.cliniq) {
+  background: #ffffff;
+}

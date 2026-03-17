@@ -1,13 +1,13 @@
-import { useState, useCallback, useId } from 'react'
+import { useState, useCallback, useId, useEffect } from 'react'
 import '../App.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8085'
 
-const STEPS = [
-  { id: 1, label: 'Upload document' },
-  { id: 2, label: 'Extract pathologies' },
-  { id: 3, label: 'Results' },
-  { id: 4, label: 'Enrich' },
+const PIPELINE_STAGES = [
+  { id: 1, key: 'ingest', label: 'Ingest' },
+  { id: 2, key: 'detect', label: 'Detect' },
+  { id: 3, key: 'enrich', label: 'Enrich' },
+  { id: 4, key: 'analyze', label: 'Analyze' },
 ]
 
 const INITIAL_PATHOLOGIES = [
@@ -104,6 +104,22 @@ export default function MedicalAnalysisPage() {
   const [showAddDescriptionForm, setShowAddDescriptionForm] = useState(false)
   const [newDescriptionText, setNewDescriptionText] = useState('')
   const [enriching, setEnriching] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+
+  useEffect(() => {
+    if (!loading) {
+      setUploadProgress(0)
+      return
+    }
+    const t1 = setTimeout(() => setUploadProgress(25), 100)
+    const t2 = setTimeout(() => setUploadProgress(55), 400)
+    const t3 = setTimeout(() => setUploadProgress(85), 800)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
+  }, [loading])
 
   const upload = useCallback(async (fileToUpload) => {
     if (!fileToUpload) return
@@ -325,93 +341,142 @@ export default function MedicalAnalysisPage() {
     setError(null)
   }, [])
 
+  const pipelineStatus = (stageId) => {
+    if (stageId === 1) return loading ? 'processing' : parseResult ? 'done' : currentStep === 1 ? 'current' : 'idle'
+    if (stageId === 2) return extracting ? 'processing' : currentStep > 2 ? 'done' : currentStep === 2 ? 'current' : 'idle'
+    if (stageId === 3) return currentStep > 3 ? 'done' : currentStep === 3 ? 'current' : 'idle'
+    if (stageId === 4) return currentStep === 4 ? 'current' : 'idle'
+    return 'idle'
+  }
+
   return (
-    <div className="app app--page">
-      <header className="header">
-        <h1>Medical Analysis</h1>
-        <p>Upload a medical document; Docling extracts text. Then run pathology extraction.</p>
+    <div className="app app--page cliniq">
+      <header className="cliniq__header">
+        <h1 className="cliniq__logo">ClinIQ</h1>
+        <p className="cliniq__tagline">Turn medical documents into structured insights. Ingest, detect, enrich, analyze.</p>
       </header>
 
-      <section className="workflow">
-        <ol className="workflow__steps" aria-label="Workflow steps">
-          {STEPS.map((step) => (
-            <li
-              key={step.id}
-              className={`workflow__step ${currentStep === step.id ? 'workflow__step--current' : ''} ${currentStep > step.id ? 'workflow__step--done' : ''}`}
+      <nav className="cliniq-pipeline" aria-label="Analysis pipeline">
+        {PIPELINE_STAGES.map((stage) => {
+          const status = pipelineStatus(stage.id)
+          return (
+            <div
+              key={stage.id}
+              className={`cliniq-stage cliniq-stage--${status}`}
+              aria-current={status === 'current' ? 'step' : undefined}
             >
-              <span className="workflow__step-num">{step.id}</span>
-              <span className="workflow__step-label">{step.label}</span>
-            </li>
-          ))}
-        </ol>
+              <span className="cliniq-stage__icon" aria-hidden="true">{stage.id}</span>
+              <span className="cliniq-stage__label">{stage.label}</span>
+            </div>
+          )
+        })}
+      </nav>
 
-        <div className="workflow__content">
-          {currentStep === 1 && (
-            <>
-              <h2 className="workflow__title">Step 1: Upload document</h2>
-              <p className="workflow__desc">Drop or select a file. Docling will parse it (PDF, DOCX, images).</p>
-              <section
-                className={`dropzone ${dragOver ? 'dropzone--over' : ''} ${loading ? 'dropzone--loading' : ''}`}
-                onDrop={onDrop}
-                onDragOver={onDragOver}
-                onDragLeave={onDragLeave}
-              >
-                <input
-                  type="file"
-                  id={inputId}
-                  className="dropzone__input"
-                  accept=".pdf,.docx,.doc,.pptx,.xlsx,.html,.png,.jpg,.jpeg,.tiff,.md"
-                  onChange={onFileChange}
-                  disabled={loading}
-                />
-                <label htmlFor={inputId} className="dropzone__label">
-                  {loading ? (
-                    <span className="dropzone__status">Parsing…</span>
-                  ) : (
-                    <>
-                      <span className="dropzone__prompt">
-                        {file ? file.name : 'Drop a file here or click to browse'}
-                      </span>
-                      <span className="dropzone__hint">PDF, DOCX, images, etc.</span>
-                    </>
-                  )}
-                </label>
-              </section>
-            </>
-          )}
-
-          {currentStep === 2 && (
-            <>
-              <h2 className="workflow__title">Step 2: Extract pathologies</h2>
-              <p className="workflow__desc">Document parsed. Click below to run pathology extraction on the extracted text.</p>
-              {parseResult && (
-                <div className="workflow__parse-summary">
-                  <strong>{parseResult.filename}</strong>
-                  {parseResult.processingTime != null && (
-                    <span className="workflow__meta">Parsed in {(parseResult.processingTime / 1000).toFixed(2)}s</span>
-                  )}
-                </div>
+      <div className="workflow__content">
+        {currentStep === 1 && (
+          <div className="cliniq-content">
+            <h2 className="cliniq-content__title">Drop your document to unlock insights</h2>
+            <p className="cliniq-content__desc">We’ll parse and prepare it for analysis. One file at a time.</p>
+            <section
+              className={`cliniq-dropzone ${dragOver ? 'cliniq-dropzone--over' : ''} ${loading ? 'cliniq-dropzone--loading' : ''} ${parseResult && file ? 'cliniq-dropzone--loaded' : ''}`}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+            >
+              <input
+                type="file"
+                id={inputId}
+                className="cliniq-dropzone__input"
+                accept=".pdf,.docx,.doc,.pptx,.xlsx,.html,.png,.jpg,.jpeg,.tiff,.md"
+                onChange={onFileChange}
+                disabled={loading}
+              />
+              <label htmlFor={inputId} className="cliniq-dropzone__label">
+                {loading ? (
+                  <>
+                    <span className="cliniq-dropzone__status">Reading document…</span>
+                    <div className="cliniq-dropzone__progress-wrap">
+                      <div className="cliniq-dropzone__progress-bar" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                  </>
+                ) : parseResult && file ? (
+                  <>
+                    <span className="cliniq-dropzone__prompt">Document ready for analysis</span>
+                    <div className="cliniq-file-preview">
+                      <span className="cliniq-file-preview__icon" aria-hidden="true">📄</span>
+                      <div>
+                        <div className="cliniq-file-preview__name">{file.name}</div>
+                        <div className="cliniq-file-preview__meta">
+                          {parseResult.processingTime != null ? `Parsed in ${(parseResult.processingTime / 1000).toFixed(2)}s` : 'Ready'}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="cliniq-dropzone__hint">Drop another file or continue below</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="cliniq-dropzone__prompt">
+                      {file ? file.name : 'Drop a file here or click to browse'}
+                    </span>
+                    <span className="cliniq-dropzone__hint">We support PDFs, scans, and handwritten notes</span>
+                  </>
+                )}
+              </label>
+              {!loading && !parseResult && (
+                <p className="cliniq-dropzone__smart-hint">PDF, DOCX, images. We extract text automatically.</p>
               )}
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={extractPathologies}
-                disabled={extracting || !parseResult}
-              >
-                {extracting ? 'Extracting…' : 'Extract pathologies'}
-              </button>
-              <button type="button" className="btn btn--secondary" onClick={reset}>
-                Start over
-              </button>
-            </>
-          )}
+            </section>
+            {parseResult && (
+              <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button type="button" className="btn btn--primary" onClick={() => setCurrentStep(2)}>
+                  Continue to detect pathologies
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={reset}>Start over</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div className="cliniq-content">
+            <h2 className="cliniq-content__title">Detect pathologies</h2>
+            <p className="cliniq-content__desc">Run extraction on the parsed text to detect pathologies and findings.</p>
+            {parseResult && (
+              <div className={`cliniq-card cliniq-doc-card ${extracting ? 'cliniq-doc-card--scanning' : ''}`} style={{ marginBottom: '1.25rem' }}>
+                <strong>{parseResult.filename}</strong>
+                {parseResult.processingTime != null && (
+                  <span className="workflow__meta" style={{ marginLeft: '0.75rem' }}>Parsed in {(parseResult.processingTime / 1000).toFixed(2)}s</span>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={extractPathologies}
+              disabled={extracting || !parseResult}
+            >
+              {extracting ? 'Detecting pathologies…' : 'Detect pathologies'}
+            </button>
+            <button type="button" className="btn btn--secondary" onClick={reset} style={{ marginLeft: '0.5rem' }}>
+              Start over
+            </button>
+          </div>
+        )}
 
           {currentStep === 3 && (
             <>
-              <h2 className="workflow__title">Step 3: Results</h2>
-              {extractionResult && (
-                <div className="workflow__result">
-                  <p className="workflow__result-message">Extracted pathologies from the uploaded document.</p>
+              <div className="cliniq-content">
+                <div className="cliniq-results-header">
+                  <h2 className="cliniq-results-header__title">What we found</h2>
+                  <p className="cliniq-results-header__sub">Review and confirm findings, then enrich with context.</p>
+                </div>
+                {extractionResult && (
+                  <>
+                    <div className="cliniq-highlights">
+                      <span className="cliniq-highlight cliniq-highlight--valid">{pathologies.length} patholog{pathologies.length !== 1 ? 'ies' : 'y'} detected</span>
+                      {extractionResult?.filename && <span className="cliniq-highlight">{extractionResult.filename}</span>}
+                    </div>
+                    <div className="workflow__result">
                   <div className="workflow__result-toolbar">
                     <button
                       type="button"
@@ -429,7 +494,7 @@ export default function MedicalAnalysisPage() {
                       onClick={() => setShowAddPathologyForm(true)}
                       aria-label="Add pathology"
                     >
-                      + Add pathology
+                      + Add finding
                     </button>
                   </div>
                   {showAddPathologyForm && (
@@ -507,28 +572,32 @@ export default function MedicalAnalysisPage() {
                       )
                     })}
                   </ul>
+                    </div>
+                  </>
+                )}
+                <div className="workflow__result-actions">
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={enrich}
+                    disabled={enriching || !extractionResult}
+                  >
+                    {enriching ? 'Enriching…' : 'Enrich with context'}
+                  </button>
+                  <button type="button" className="btn btn--secondary" onClick={reset}>
+                    Analyze another document
+                  </button>
                 </div>
-              )}
-              <div className="workflow__result-actions">
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={enrich}
-                  disabled={enriching || !extractionResult}
-                >
-                  {enriching ? 'Enriching…' : 'Enrich'}
-                </button>
-                <button type="button" className="btn btn--secondary" onClick={reset}>
-                  Analyse another document
-                </button>
               </div>
             </>
           )}
 
           {currentStep === 4 && (
             <>
-              <h2 className="workflow__title">Step 4: Enrich</h2>
-              <p className="workflow__desc">Paragraphs from the original document linked to the inability, as written by the physician. Some content may be handwritten.</p>
+              <div className="cliniq-content">
+                <h2 className="cliniq-content__title">Enrich with context</h2>
+                <p className="cliniq-content__desc">Paragraphs from the document linked to the findings. Some content may be handwritten.</p>
+              </div>
               <div className="workflow__result-toolbar">
                 <button
                   type="button"
@@ -640,16 +709,15 @@ export default function MedicalAnalysisPage() {
               </div>
               <div className="workflow__result-actions">
                 <button type="button" className="btn btn--secondary" onClick={() => setCurrentStep(3)}>
-                  Back to results
+                  Back to findings
                 </button>
                 <button type="button" className="btn btn--secondary" onClick={reset}>
-                  Analyse another document
+                  Analyze another document
                 </button>
               </div>
             </>
           )}
         </div>
-      </section>
 
       {error && (
         <div className="message message--error" role="alert">

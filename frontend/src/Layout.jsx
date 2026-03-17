@@ -21,7 +21,7 @@ export default function Layout() {
               to="/medical-analysis"
               className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`}
             >
-              Medical Analysis
+              ClinIQ
             </NavLink>
           </li>
           <li>

@@ -1170,3 +1170,469 @@ body {
   display: flex;
   gap: 0.5rem;
 }
+
+/* ==========================================================================
+   ClinIQ — Medical document analysis (light UI)
+   Override global theme so all components (pathology-item, forms, etc.) get
+   light backgrounds and dark text for readability.
+   ========================================================================== */
+.cliniq {
+  /* Global theme overrides (used by shared components inside .cliniq) */
+  --bg: #ffffff;
+  --surface: #f9fafb;
+  --border: #e5e7eb;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --accent: #0d9488;
+  --accent-hover: #0faaa0;
+  --error: #dc2626;
+  /* ClinIQ-specific tokens */
+  --cliniq-bg: #ffffff;
+  --cliniq-surface: #f9fafb;
+  --cliniq-surface-elevated: #ffffff;
+  --cliniq-border: #e5e7eb;
+  --cliniq-text: #111827;
+  --cliniq-text-muted: #6b7280;
+  --cliniq-accent: #0d9488;
+  --cliniq-accent-glow: rgba(13, 148, 136, 0.18);
+  --cliniq-success: #16a34a;
+  --cliniq-attention: #d97706;
+  --cliniq-anomaly: #dc2626;
+  --cliniq-radius: 14px;
+  --cliniq-radius-sm: 10px;
+  --cliniq-font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --cliniq-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --cliniq-shadow-glow: 0 0 0 3px var(--cliniq-accent-glow);
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+  min-height: 100vh;
+  background: var(--cliniq-bg);
+  color: var(--cliniq-text);
+}
+
+.cliniq .cliniq__header {
+  text-align: center;
+  padding: 2rem 0 2.5rem;
+}
+
+.cliniq .cliniq__logo {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--cliniq-accent);
+  margin: 0 0 0.35rem;
+}
+
+.cliniq .cliniq__tagline {
+  font-size: 0.95rem;
+  color: var(--cliniq-text-muted);
+  margin: 0;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Pipeline (horizontal flow) */
+.cliniq-pipeline {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.cliniq-pipeline::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: var(--cliniq-border);
+  z-index: 0;
+  border-radius: 1px;
+}
+
+.cliniq-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.cliniq-stage__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--cliniq-text-muted);
+  background: var(--cliniq-surface);
+  border: 2px solid var(--cliniq-border);
+  transition: border-color 0.25s, background 0.25s, color 0.25s, box-shadow 0.25s;
+}
+
+.cliniq-stage--done .cliniq-stage__icon {
+  background: var(--cliniq-accent);
+  border-color: var(--cliniq-accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
+.cliniq-stage--current .cliniq-stage__icon {
+  border-color: var(--cliniq-accent);
+  color: var(--cliniq-accent);
+  background: var(--cliniq-surface-elevated);
+}
+
+.cliniq-stage--processing .cliniq-stage__icon {
+  border-color: var(--cliniq-accent);
+  color: var(--cliniq-accent);
+  background: var(--cliniq-surface-elevated);
+  animation: cliniq-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cliniq-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--cliniq-accent-glow); }
+  50% { box-shadow: 0 0 0 6px var(--cliniq-accent-glow); }
+}
+
+.cliniq-stage__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--cliniq-text-muted);
+  text-align: center;
+  max-width: 90px;
+}
+
+.cliniq-stage--current .cliniq-stage__label,
+.cliniq-stage--processing .cliniq-stage__label {
+  color: var(--cliniq-text);
+}
+
+.cliniq-stage--done .cliniq-stage__label {
+  color: var(--cliniq-accent);
+}
+
+/* Glass card */
+.cliniq-card {
+  background: var(--cliniq-surface);
+  border: 1px solid var(--cliniq-border);
+  border-radius: var(--cliniq-radius);
+  box-shadow: var(--cliniq-shadow);
+  padding: 1.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cliniq-card:hover {
+  border-color: rgba(13, 148, 136, 0.4);
+}
+
+/* Dropzone (premium) */
+.cliniq-dropzone {
+  position: relative;
+  border: 2px dashed var(--cliniq-border);
+  border-radius: var(--cliniq-radius);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: var(--cliniq-surface);
+  transition: border-color 0.25s, background 0.25s, transform 0.2s;
+  overflow: hidden;
+}
+
+.cliniq-dropzone:hover {
+  border-color: var(--cliniq-accent);
+  background: rgba(13, 148, 136, 0.06);
+}
+
+.cliniq-dropzone--over {
+  border-color: var(--cliniq-accent);
+  background: rgba(13, 148, 136, 0.08);
+  transform: scale(1.005);
+}
+
+.cliniq-dropzone--loading {
+  pointer-events: none;
+  border-color: var(--cliniq-accent);
+}
+
+.cliniq-dropzone--loaded {
+  border-style: solid;
+  border-color: var(--cliniq-border);
+}
+
+.cliniq-dropzone__input {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.cliniq-dropzone__label {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.cliniq-dropzone__prompt {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--cliniq-text);
+}
+
+.cliniq-dropzone__hint {
+  font-size: 0.875rem;
+  color: var(--cliniq-text-muted);
+}
+
+.cliniq-dropzone__smart-hint {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cliniq-border);
+  font-size: 0.8rem;
+  color: var(--cliniq-text-muted);
+}
+
+.cliniq-dropzone__progress-wrap {
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  background: var(--cliniq-border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.75rem auto 0;
+}
+
+.cliniq-dropzone__progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cliniq-accent), #14b8a6);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.35s ease-out;
+}
+
+.cliniq-dropzone--loading .cliniq-dropzone__progress-bar {
+  animation: cliniq-progress-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes cliniq-progress-indeterminate {
+  0% { width: 20%; margin-left: 0; }
+  50% { width: 60%; margin-left: 20%; }
+  100% { width: 20%; margin-left: 0; }
+}
+
+.cliniq-dropzone__status {
+  color: var(--cliniq-accent);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* File preview card (after upload) */
+.cliniq-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--cliniq-surface);
+  border: 1px solid var(--cliniq-border);
+  border-radius: var(--cliniq-radius-sm);
+  margin-top: 1rem;
+  text-align: left;
+  box-shadow: var(--cliniq-shadow);
+}
+
+.cliniq-file-preview__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--cliniq-radius-sm);
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--cliniq-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.cliniq-file-preview__name {
+  font-weight: 500;
+  color: var(--cliniq-text);
+  font-size: 0.95rem;
+}
+
+.cliniq-file-preview__meta {
+  font-size: 0.8rem;
+  color: var(--cliniq-text-muted);
+  margin-top: 0.15rem;
+}
+
+/* Content area with transition */
+.cliniq-content {
+  animation: cliniq-fade-in 0.35s ease-out;
+}
+
+@keyframes cliniq-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cliniq-content__title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--cliniq-text);
+  margin: 0 0 0.35rem;
+}
+
+.cliniq-content__desc {
+  color: var(--cliniq-text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+}
+
+/* Detect step: document card with scan effect */
+.cliniq-doc-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.cliniq-doc-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -100%;
+  height: 100%;
+  background: linear-gradient(180deg, transparent, rgba(13, 148, 136, 0.06), transparent);
+  pointer-events: none;
+}
+
+.cliniq-doc-card--scanning::after {
+  animation: cliniq-scan 1.8s ease-in-out infinite;
+}
+
+@keyframes cliniq-scan {
+  0% { top: -100%; }
+  100% { top: 100%; }
+}
+
+/* Results: What we found */
+.cliniq-results-header {
+  margin-bottom: 1.25rem;
+}
+
+.cliniq-results-header__title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--cliniq-text);
+  margin: 0 0 0.25rem;
+}
+
+.cliniq-results-header__sub {
+  font-size: 0.9rem;
+  color: var(--cliniq-text-muted);
+  margin: 0;
+}
+
+.cliniq-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.cliniq-highlight {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--cliniq-surface-elevated);
+  border: 1px solid var(--cliniq-border);
+  color: var(--cliniq-text);
+}
+
+.cliniq-highlight--valid {
+  border-color: rgba(22, 163, 74, 0.35);
+  background: rgba(22, 163, 74, 0.08);
+  color: var(--cliniq-success);
+}
+
+.cliniq-highlight--attention {
+  border-color: rgba(217, 119, 6, 0.35);
+  background: rgba(217, 119, 6, 0.08);
+  color: var(--cliniq-attention);
+}
+
+/* Pathology / description cards (semantic status + depth) */
+.cliniq .pathology-item,
+.cliniq .enrich-section,
+.cliniq .extra-description-item {
+  box-shadow: var(--cliniq-shadow);
+  border-radius: var(--cliniq-radius-sm);
+}
+
+.cliniq .pathology-item--accepted,
+.cliniq .enrich-section--accepted,
+.cliniq .extra-description-item--accepted {
+  border-color: rgba(22, 163, 74, 0.4);
+  background: rgba(22, 163, 74, 0.06);
+}
+
+.cliniq .pathology-item--declined,
+.cliniq .enrich-section--declined,
+.cliniq .extra-description-item--declined {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.25);
+  opacity: 1;
+}
+
+/* Primary button (ClinIQ) */
+.cliniq .btn--primary {
+  background: var(--cliniq-accent);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.25);
+}
+
+.cliniq .btn--primary:hover:not(:disabled) {
+  background: #0faaa0;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
+}
+
+/* Side panels (glass) */
+.cliniq .side-view {
+  background: var(--cliniq-surface);
+  border-left-color: var(--cliniq-border);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+.cliniq .side-view__title {
+  color: var(--cliniq-text);
+}
+
+.cliniq .message--error {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.25);
+  color: var(--cliniq-anomaly);
+}
+
+/* Secondary button in light theme */
+.cliniq .btn--secondary {
+  background: var(--cliniq-surface);
+  color: var(--cliniq-text);
+  border: 1px solid var(--cliniq-border);
+}
+
+.cliniq .btn--secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}

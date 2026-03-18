@@ -4,7 +4,7 @@ import '../App.css'
 const ENABLED_MODULE_IDS = new Set(['cliniq', 'document-inspector', 'artist-data'])
 
 const MODULES = [
-  { id: 'cliniq', name: 'ClinIQ', enabled: true, description: 'Medical analysis and clinical insights. Upload medical documents, get structured summaries and smart hints. Supports PDFs, scans, and handwritten notes with automatic text extraction.' },
+  { id: 'cliniq', name: 'Medical Reports', enabled: true, description: 'Medical analysis and clinical insights. Upload medical documents, get structured summaries and smart hints. Supports PDFs, scans, and handwritten notes with automatic text extraction.' },
   { id: 'document-inspector', name: 'Document Inspector', enabled: true, description: 'Upload documents, parse with Docling, and store them in a vector database. Run similarity search and RAG (Ask) over your indexed content. Ideal for searching across contracts, reports, and knowledge bases.' },
   { id: 'artist-data', name: 'Artist Data', enabled: true, description: 'Extract artist names and pricing (per hour, per performance, flat, etc.) from documents. Chunk-based extraction with editable results and persistent storage. Supports PDF upload via Docling.' },
   { id: 'contract-analyzer', name: 'Contract Analyzer', enabled: false, description: 'Extract clauses, obligations, and key terms from contracts. Highlights dates, parties, and renewal conditions. Supports NDAs, MSAs, and SOWs.' },
@@ -40,14 +40,14 @@ export default function AdminPage() {
   const isActive = (m) => ENABLED_MODULE_IDS.has(m.id) || subscribed.has(m.id)
 
   return (
-    <div className="app app--page admin-page">
-      <header className="header">
-        <h1>Admin</h1>
-        <p>Payment details and module subscriptions (mocked).</p>
+    <div className="app app--page admin-page cliniq">
+      <header className="cliniq__header">
+        <h1 className="cliniq__logo">Admin</h1>
+        <p className="cliniq__tagline">Payment details and module subscriptions (mocked).</p>
       </header>
 
       <div className="admin-layout">
-        <aside className="admin-info-pane">
+        <aside className="admin-info-pane cliniq-card">
           <h3 className="admin-info-pane__title">Module info</h3>
           {selectedModule ? (
             <div className="admin-info-pane__content">
@@ -60,7 +60,7 @@ export default function AdminPage() {
         </aside>
 
         <div className="admin-main">
-          <section className="admin-section">
+          <section className="admin-section cliniq-card">
             <h2 className="admin-section__title">Payment details</h2>
             <form className="admin-form" onSubmit={handlePaymentSubmit}>
               <label className="admin-form__label">
@@ -109,7 +109,7 @@ export default function AdminPage() {
             </form>
           </section>
 
-          <section className="admin-section">
+          <section className="admin-section cliniq-card">
             <h2 className="admin-section__title">Modules</h2>
             <ul className="admin-modules">
               {MODULES.map((m) => (

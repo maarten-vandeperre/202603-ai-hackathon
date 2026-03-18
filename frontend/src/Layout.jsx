@@ -5,7 +5,7 @@ export default function Layout() {
   return (
     <div className="layout">
       <nav className="nav" aria-label="Main">
-        <div className="nav__brand">Document App</div>
+        <div className="nav__brand">ClinIQ</div>
         <ul className="nav__list">
           <li>
             <NavLink
@@ -21,7 +21,7 @@ export default function Layout() {
               to="/medical-analysis"
               className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`}
             >
-              ClinIQ
+              Medical Reports
             </NavLink>
           </li>
           <li>

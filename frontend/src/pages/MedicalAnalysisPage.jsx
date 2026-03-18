@@ -390,7 +390,7 @@ export default function MedicalAnalysisPage() {
   return (
     <div className="app app--page cliniq">
       <header className="cliniq__header">
-        <h1 className="cliniq__logo">ClinIQ</h1>
+        <h1 className="cliniq__logo">Medical Reports</h1>
         <p className="cliniq__tagline">Turn medical documents into structured insights. Ingest, detect, enrich, analyze.</p>
       </header>
 

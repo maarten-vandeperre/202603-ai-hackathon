@@ -146,13 +146,13 @@ export default function AuditPage() {
   const insights = useMemo(() => computeInsights(selectedUser, aggregated, MOCK_AUDIT), [selectedUser, aggregated])
 
   return (
-    <div className="app app--page audit-page">
-      <header className="header">
-        <h1>Audit</h1>
-        <p>Usage per module and per user. See which model is used and how it matches usage (mocked data).</p>
+    <div className="app app--page audit-page cliniq">
+      <header className="cliniq__header">
+        <h1 className="cliniq__logo">Audit</h1>
+        <p className="cliniq__tagline">Usage per module and per user. See which model is used and how it matches usage (mocked data).</p>
       </header>
 
-      <section className="audit-controls">
+      <section className="audit-controls cliniq-card">
         <label className="audit-controls__label">
           Aggregate by user
           <select
@@ -168,7 +168,7 @@ export default function AuditPage() {
         </label>
       </section>
 
-      <section className="audit-summary">
+      <section className="audit-summary cliniq-card">
         <h2 className="audit-section__title">Model in use</h2>
         <p className="audit-model">{aggregated.model}</p>
       </section>
@@ -176,8 +176,8 @@ export default function AuditPage() {
       <section className="audit-modules">
         <h2 className="audit-section__title">Usage by module</h2>
         <div className="audit-modules__grid">
-        <div className="audit-card">
-          <h3 className="audit-card__title">ClinIQ</h3>
+        <div className="audit-card cliniq-card">
+          <h3 className="audit-card__title">Medical Reports</h3>
           <dl className="audit-card__list">
             <dt>Accepts</dt>
             <dd>{aggregated.cliniq.accepts}</dd>
@@ -186,7 +186,7 @@ export default function AuditPage() {
           </dl>
         </div>
 
-        <div className="audit-card">
+        <div className="audit-card cliniq-card">
           <h3 className="audit-card__title">Document Inspector</h3>
           <dl className="audit-card__list">
             <dt>Documents indexed</dt>
@@ -198,7 +198,7 @@ export default function AuditPage() {
           </dl>
         </div>
 
-        <div className="audit-card">
+        <div className="audit-card cliniq-card">
           <h3 className="audit-card__title">Artist Data</h3>
           <dl className="audit-card__list">
             <dt>Extractions run</dt>
@@ -219,13 +219,13 @@ export default function AuditPage() {
         <p className="audit-by-model__hint">Aggregated usage for each model across all users.</p>
         <div className="audit-by-model__grid">
           {Object.entries(byModel).map(([modelName, data]) => (
-            <div key={modelName} className="audit-model-card">
+            <div key={modelName} className="audit-model-card cliniq-card">
               <h3 className="audit-model-card__title">{modelName}</h3>
               <p className="audit-model-card__users">Users: {data.users.join(', ')}</p>
               <dl className="audit-card__list">
-                <dt>ClinIQ accepts</dt>
+                <dt>Medical Reports accepts</dt>
                 <dd>{data.cliniq.accepts}</dd>
-                <dt>ClinIQ declines</dt>
+                <dt>Medical Reports declines</dt>
                 <dd>{data.cliniq.declines}</dd>
                 <dt>Doc. Inspector indexed</dt>
                 <dd>{data.documentInspector.documentsIndexed}</dd>
@@ -247,7 +247,7 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <section className="audit-insights">
+      <section className="audit-insights cliniq-card">
         <h2 className="audit-section__title">Insights</h2>
         <p className="audit-insights__hint">Suggestions based on model choice vs. volume and override rates (mocked).</p>
         <ul className="audit-insights__list">

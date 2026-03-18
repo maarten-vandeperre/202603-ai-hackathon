@@ -1211,6 +1211,12 @@ body {
   color: var(--cliniq-text);
 }
 
+.cliniq.admin-page,
+.cliniq.audit-page {
+  max-width: 900px;
+  padding: 0 1rem 3rem;
+}
+
 .cliniq .cliniq__header {
   text-align: center;
   padding: 2rem 0 2.5rem;

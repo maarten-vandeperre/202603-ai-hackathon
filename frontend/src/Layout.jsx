@@ -40,6 +40,22 @@ export default function Layout() {
               Artist Data
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`}
+            >
+              Admin
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/audit"
+              className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`}
+            >
+              Audit
+            </NavLink>
+          </li>
         </ul>
       </nav>
       <main className="layout__main">

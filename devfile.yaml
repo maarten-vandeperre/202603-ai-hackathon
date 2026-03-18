@@ -1,0 +1,116 @@
+schemaVersion: 2.2.2
+
+metadata:
+  name: custom-dev-workspace
+  description: >
+    OpenShift Dev Spaces workspace with wget, curl, rootless Podman,
+    Node.js/npm, and Java 25 (LTS) via SDKMAN.
+
+attributes:
+  # Use per-workspace storage for better isolation
+  controller.devfile.io/storage-type: per-workspace
+
+components:
+  - name: dev-tools
+    attributes:
+      # Enable /dev/fuse and /dev/net/tun for rootless Podman
+      # Requires OCP 4.15+ or fuse device plugin on older versions
+      pod-overrides:
+        metadata:
+          annotations:
+            io.kubernetes.cri-o.Devices: "/dev/fuse,/dev/net/tun"
+        spec:
+          # User namespaces for rootless Podman support
+          hostUsers: false
+      container-overrides:
+        securityContext:
+          procMount: Unmasked
+    container:
+      image: registry.redhat.io/devspaces/udi-rhel9:3.20
+      memoryLimit: 4Gi
+      memoryRequest: 1Gi
+      cpuLimit: "2"
+      cpuRequest: 500m
+      mountSources: true
+
+      env:
+        - name: SDKMAN_DIR
+          value: /home/user/.sdkman
+        - name: JAVA_HOME
+          value: /home/user/.sdkman/candidates/java/current
+        - name: PATH
+          value: /home/user/.sdkman/candidates/java/current/bin:/home/user/.sdkman/candidates/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: BUILDAH_ISOLATION
+          value: chroot
+        - name: STORAGE_DRIVER
+          value: vfs
+
+      endpoints:
+        - name: http-8080
+          targetPort: 8080
+          exposure: public
+          protocol: http
+        - name: https-8443
+          targetPort: 8443
+          exposure: public
+          protocol: https
+        - name: debug-5005
+          targetPort: 5005
+          exposure: internal
+          protocol: tcp
+
+commands:
+  - id: install-toolchain
+    apply:
+      component: dev-tools
+
+  - id: setup-tools
+    exec:
+      component: dev-tools
+      workingDir: /home/user
+      commandLine: |
+        set -e
+
+        echo "==> Ensuring wget and curl are available..."
+        which wget || (sudo microdnf install -y wget --disableplugin=subscription-manager && echo "wget installed")
+        which curl || (sudo microdnf install -y curl --disableplugin=subscription-manager && echo "curl installed")
+
+        echo "==> Installing SDKMAN (if not already present)..."
+        if [ ! -d "${SDKMAN_DIR}" ]; then
+          curl -s "https://get.sdkman.io" | bash
+        else
+          echo "SDKMAN already installed, skipping."
+        fi
+
+        source "${SDKMAN_DIR}/bin/sdkman-init.sh"
+
+        echo "==> Installing Java 25 (LTS) via SDKMAN..."
+        if ! sdk list java | grep -q "25\." 2>/dev/null || ! sdk current java | grep -q "25"; then
+          sdk install java 25-tem
+          sdk default java 25-tem
+        else
+          echo "Java 25 already set as default."
+        fi
+
+        echo "==> Installing Node.js LTS (for npm) via SDKMAN..."
+        if ! sdk current node 2>/dev/null | grep -q "node"; then
+          sdk install node
+          sdk default node
+        else
+          echo "Node.js already installed."
+        fi
+
+        echo "==> Verifying toolchain..."
+        echo "  wget:   $(wget --version 2>&1 | head -1)"
+        echo "  curl:   $(curl --version | head -1)"
+        echo "  podman: $(podman --version)"
+        echo "  npm:    $(npm --version)"
+        echo "  java:   $(java --version | head -1)"
+        echo ""
+        echo "==> Setup complete!"
+
+      label: "Setup full toolchain (Java 25, npm, wget, curl, Podman)"
+
+events:
+  postStart:
+    - setup-tools

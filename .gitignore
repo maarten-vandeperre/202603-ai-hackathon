@@ -3,6 +3,7 @@
 
 # Log file
 *.log
+chunk-log.txt
 
 # BlueJ files
 *.ctxt

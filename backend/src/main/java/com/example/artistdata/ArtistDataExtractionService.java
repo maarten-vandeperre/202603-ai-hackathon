@@ -7,6 +7,12 @@ import org.jboss.logging.Logger;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -88,6 +94,9 @@ Chunk text:
     @Inject
     ObjectMapper objectMapper;
 
+    private static final int LOG_TEXT_MAX_LENGTH = 3000;
+    private static final String CHUNK_LOG_FILE = "chunk-log.txt";
+
     public ArtistDataDto.ExtractResponse extract(String rawText) {
         ArtistDataDto.ExtractResponse response = new ArtistDataDto.ExtractResponse();
         response.chunks = List.of();
@@ -101,11 +110,14 @@ Chunk text:
             return response;
         }
 
+        appendToChunkLog("parsed text (length=" + rawText.length() + ")", truncateForLog(rawText, LOG_TEXT_MAX_LENGTH));
+
         String textForChunking = stripImageAndBinaryContent(rawText.trim());
         int removed = rawText.length() - textForChunking.length();
         if (removed > 0) {
             LOG.infof("ArtistDataExtraction: stripped %d chars of image/binary content before chunking", removed);
         }
+        appendToChunkLog("text without binary (length=" + textForChunking.length() + ")", truncateForLog(textForChunking, LOG_TEXT_MAX_LENGTH));
 
         List<ArtistDataDto.ChunkDto> chunks = documentChunker.chunk(textForChunking);
         response.chunks = chunks;
@@ -114,7 +126,8 @@ Chunk text:
         LOG.infof("ArtistDataExtraction: processing %d chunks", total);
         for (int i = 0; i < chunks.size(); i++) {
             ArtistDataDto.ChunkDto chunk = chunks.get(i);
-            LOG.infof("ArtistDataExtraction: chunk progress %d/%d (%s)", i + 1, total, chunk.chunkId);
+            int len = chunk.text != null ? chunk.text.length() : 0;
+            appendToChunkLog("chunk " + chunk.chunkId + " (" + (i + 1) + "/" + total + ") content (length=" + len + ")", truncateForLog(chunk.text, LOG_TEXT_MAX_LENGTH));
             ArtistDataDto.PerChunkResultDto chunkResult = extractChunk(chunk);
             response.perChunkResults.add(chunkResult);
         }
@@ -185,6 +198,25 @@ Chunk text:
             s = s.substring(0, s.length() - 3);
         }
         return s.trim();
+    }
+
+    private static String truncateForLog(String text, int maxLen) {
+        if (text == null) return "(null)";
+        if (text.length() <= maxLen) return text;
+        return text.substring(0, maxLen) + "\n... [truncated, total " + text.length() + " chars]";
+    }
+
+    private void appendToChunkLog(String sectionLabel, String content) {
+        try {
+            Path path = Paths.get(CHUNK_LOG_FILE);
+            String block = "\n========== " + Instant.now() + " " + sectionLabel + " ==========\n"
+                + (content != null ? content : "(null)")
+                + "\n";
+            Files.write(path, block.getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (Exception e) {
+            LOG.warnf("Could not write to %s: %s", CHUNK_LOG_FILE, e.getMessage());
+        }
     }
 
     /**

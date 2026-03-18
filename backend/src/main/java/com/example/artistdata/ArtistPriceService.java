@@ -43,30 +43,21 @@ public class ArtistPriceService {
     }
 
     /**
-     * Replace all stored rows with the given list (clear then insert).
+     * Append the given rows to the stored artist–price table. Existing rows are kept.
      */
     public void persist(List<ArtistDataDto.SimplifiedArtistDto> rows) {
-        if (rows == null) rows = List.of();
-        try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(false);
-            try (Statement del = conn.createStatement()) {
-                del.executeUpdate("DELETE FROM artist_prices");
+        if (rows == null || rows.isEmpty()) return;
+        String insert = "INSERT INTO artist_prices (artist, price, unit, currency) VALUES (?, ?, ?, ?)";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(insert)) {
+            for (ArtistDataDto.SimplifiedArtistDto row : rows) {
+                ps.setString(1, row.artist != null ? row.artist : "");
+                ps.setObject(2, row.price);
+                ps.setString(3, row.unit);
+                ps.setString(4, row.currency);
+                ps.addBatch();
             }
-            if (!rows.isEmpty()) {
-                String insert = "INSERT INTO artist_prices (artist, price, unit, currency) VALUES (?, ?, ?, ?)";
-                try (PreparedStatement ps = conn.prepareStatement(insert)) {
-                    for (ArtistDataDto.SimplifiedArtistDto row : rows) {
-                        ps.setString(1, row.artist != null ? row.artist : "");
-                        ps.setObject(2, row.price);
-                        ps.setString(3, row.unit);
-                        ps.setString(4, row.currency);
-                        ps.addBatch();
-                    }
-                    ps.executeBatch();
-                }
-            }
-            conn.commit();
-            LOG.infof("ArtistPriceService: persisted %d rows", rows.size());
+            ps.executeBatch();
+            LOG.infof("ArtistPriceService: appended %d rows (previous data unchanged)", rows.size());
         } catch (SQLException e) {
             LOG.error("Failed to persist artist_prices", e);
             throw new RuntimeException("Database error: " + e.getMessage());

@@ -8,8 +8,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Merges per-chunk extraction results: deduplicate by normalized name,
- * prefer "per hour" unit, then confidence, then evidence quality.
+ * Merges per-chunk extraction results: keep all distinct (artist, price, unit, currency).
+ * For each artist we output one row per distinct price/unit combination (best evidence chosen).
+ * Table is cleared before persist so all rows in the editable table replace stored data.
  */
 @ApplicationScoped
 public class ChunkResultMerger {
@@ -58,25 +59,32 @@ public class ChunkResultMerger {
         for (Map.Entry<String, List<Entry>> e : byNormalizedName.entrySet()) {
             List<Entry> list = e.getValue();
             list.sort((x, y) -> PREFER_UNIT_THEN_CONFIDENCE.compare(x.dto(), y.dto()));
-            Entry best = list.get(0);
-            ArtistDataDto.PerChunkArtistDto d = best.dto();
-
-            ArtistDataDto.MergedArtistDto m = new ArtistDataDto.MergedArtistDto();
-            m.artist = d.name != null ? d.name.trim() : e.getKey();
-            m.price = d.price;
-            m.unit = d.unit;
-            m.currency = d.currency;
-            m.sourceChunks = list.stream().map(Entry::chunkId).distinct().collect(Collectors.toList());
-            m.evidence = list.stream()
-                .map(Entry::dto)
-                .map(x -> x.evidence)
-                .filter(Objects::nonNull)
-                .filter(s -> !s.isBlank())
-                .distinct()
-                .limit(5)
-                .collect(Collectors.toList());
-            merged.artists.add(m);
-            LOG.debugf("Merge: artist=%s price=%s unit=%s sourceChunks=%s", m.artist, m.price, m.unit, m.sourceChunks);
+            // Group by (price, unit, currency) and keep best entry per group so we output all distinct prices per artist
+            Map<String, Entry> bestByPriceUnit = new LinkedHashMap<>();
+            for (Entry entry : list) {
+                ArtistDataDto.PerChunkArtistDto d = entry.dto();
+                String key = keyForPriceUnit(d.price, d.unit, d.currency);
+                bestByPriceUnit.putIfAbsent(key, entry);
+            }
+            for (Entry entry : bestByPriceUnit.values()) {
+                ArtistDataDto.PerChunkArtistDto d = entry.dto();
+                ArtistDataDto.MergedArtistDto m = new ArtistDataDto.MergedArtistDto();
+                m.artist = d.name != null ? d.name.trim() : e.getKey();
+                m.price = d.price;
+                m.unit = d.unit;
+                m.currency = d.currency;
+                m.sourceChunks = list.stream().map(Entry::chunkId).distinct().collect(Collectors.toList());
+                m.evidence = list.stream()
+                    .map(Entry::dto)
+                    .map(x -> x.evidence)
+                    .filter(Objects::nonNull)
+                    .filter(s -> !s.isBlank())
+                    .distinct()
+                    .limit(5)
+                    .collect(Collectors.toList());
+                merged.artists.add(m);
+                LOG.debugf("Merge: artist=%s price=%s unit=%s sourceChunks=%s", m.artist, m.price, m.unit, m.sourceChunks);
+            }
         }
 
         return merged;
@@ -85,6 +93,10 @@ public class ChunkResultMerger {
     private static String normalizeName(String name) {
         if (name == null || name.isBlank()) return "Unknown";
         return name.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private static String keyForPriceUnit(Double price, String unit, String currency) {
+        return (price != null ? price.toString() : "null") + "|" + (unit != null ? unit : "") + "|" + (currency != null ? currency : "");
     }
 
     public List<ArtistDataDto.SimplifiedArtistDto> toSimplified(ArtistDataDto.MergedResultDto merged) {

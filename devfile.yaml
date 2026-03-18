@@ -13,18 +13,13 @@ attributes:
 components:
   - name: dev-tools
     attributes:
-      # Enable /dev/fuse and /dev/net/tun for rootless Podman
-      # Requires OCP 4.15+ or fuse device plugin on older versions
+      # Expose /dev/fuse for fuse-overlayfs (more efficient Podman storage).
+      # Remove this annotation if the cluster does not have fuse enabled —
+      # Podman will fall back to the vfs storage driver automatically.
       pod-overrides:
         metadata:
           annotations:
-            io.kubernetes.cri-o.Devices: "/dev/fuse,/dev/net/tun"
-        spec:
-          # User namespaces for rootless Podman support
-          hostUsers: false
-      container-overrides:
-        securityContext:
-          procMount: Unmasked
+            io.kubernetes.cri-o.Devices: "/dev/fuse"
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:3.20
       memoryLimit: 4Gi
